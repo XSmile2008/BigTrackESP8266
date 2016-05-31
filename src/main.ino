@@ -23,9 +23,35 @@ void log() {
 void startWebServer() {
   webServer.on("/", []() {
     rgb.blue();
-    String page = "hello from esp8266!\n";
-    page += "ip = " + WiFi.localIP().toString();
-    webServer.send(200, "text/plain", page);
+
+    uint32_t mill = millis();
+    int sec = mill / 1000 % 60;
+  	int min = mill / 60000 % 60;
+  	int hr = mill / 3600000 % 60;
+    mill %= 1000;
+
+    char html[] = "<html>\
+    <head>\
+      <meta http-equiv='refresh' content='1'/>\
+      <title>ESP8266 Demo</title>\
+      <style>\
+        body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }\
+      </style>\
+    </head>\
+    <body>\
+      <h1>Hello from ESP8266!</h1>\
+      <p>Uptime: %02d:%02d:%02d.%03d</p>\
+      IP = \
+      Free memory = %lu\
+      Reset reason - \
+    </body>\
+    </html>";
+
+    char temp[sizeof(html) + 100];
+    snprintf ( temp, sizeof(temp), html,
+      hr, min, sec, mill, ESP.getFreeHeap());
+
+    webServer.send(200, "text/html", temp);
     rgb.off();
   });
   webServer.onNotFound([](){
@@ -85,6 +111,7 @@ void handleClient() {
     }
   }
 
+  //TODO: Rewrite this
   if (client && client.connected()){
     while(client.available()) {
       Serial.write(client.read());
@@ -94,35 +121,9 @@ void handleClient() {
       uint8_t sbuf[len];
       Serial.readBytes(sbuf, len);
       client.write(sbuf, len);
-      delay(1);
+      // delay(1);
     }
   }
-
-  // if (client && client.connected()){
-  //   while(client.available()) {
-  //     String s = client.readStringUntil('\n');
-  //     if (s.indexOf("nyan") != -1) {
-  //       Serial.println(s);
-  //       client.println("punyan");
-  //       rgb.green();
-  //       delay(100);
-  //       rgb.off();
-  //     } else {
-  //       Serial.println(s);
-  //       client.println("not find");
-  //       rgb.red();
-  //       delay(100);
-  //       rgb.off();
-  //     }
-  //   }
-  //   while(Serial.available()) {
-  //     size_t len = Serial.available();
-  //     uint8_t sbuf[len];
-  //     Serial.readBytes(sbuf, len);
-  //     client.write(sbuf, len);
-  //     delay(1);
-  //   }
-  // }
 }
 
 void setup() {
